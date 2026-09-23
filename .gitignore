@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+
+.DS_Store
+coverage/
+
+storage/originals/
+storage/generated/
+storage/audio/
+storage/thumbnails/
+storage/temp/
+
+backend/prisma/*.db
