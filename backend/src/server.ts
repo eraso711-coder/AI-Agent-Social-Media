@@ -1,4 +1,3 @@
-
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -6,6 +5,8 @@ import helmet from "helmet";
 import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
 import healthRoutes from "./routes/health.routes.js";
+import projectsRoutes from "./modules/projects/projects.routes.js";
+import mediaRoutes from "./modules/media/media.routes.js";
 
 const app = express();
 
@@ -28,6 +29,8 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/api/health", healthRoutes);
+app.use("/api/projects", projectsRoutes);
+app.use("/api", mediaRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({
