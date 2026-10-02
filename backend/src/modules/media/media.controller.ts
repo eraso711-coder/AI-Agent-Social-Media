@@ -1,189 +1,315 @@
-import type { Request, Response } from "express";
+import type {
+  Request,
+  Response,
+} from "express";
 
-import * as mediaService from "./media.service.js";
+import { prisma } from "../../config/prisma.js";
 
-function serializeMedia(media: any) {
+import {
+  deletePhysicalFile,
+} from "./media.storage.js";
+
+function serializeMedia(media: {
+  id: string;
+  projectId: string;
+  originalName: string;
+  storagePath: string;
+  mimeType: string;
+  mediaType: "IMAGE" | "VIDEO" | "AUDIO";
+  sizeBytes: bigint;
+  duration: number | null;
+  width: number | null;
+  height: number | null;
+  createdAt: Date;
+}) {
   return {
     ...media,
-    sizeBytes: media.sizeBytes.toString()
+    sizeBytes: media.sizeBytes.toString(),
   };
+}
+
+function getMediaType(
+  mimeType: string,
+): "IMAGE" | "VIDEO" | "AUDIO" {
+  if (mimeType.startsWith("image/")) {
+    return "IMAGE";
+  }
+
+  if (mimeType.startsWith("video/")) {
+    return "VIDEO";
+  }
+
+  if (mimeType.startsWith("audio/")) {
+    return "AUDIO";
+  }
+
+  throw new Error(
+    `Unsupported media type: ${mimeType}`,
+  );
+}
+
+function getProjectId(
+  req: Request,
+): string | null {
+  const projectIdParam = req.params.projectId;
+
+  if (Array.isArray(projectIdParam)) {
+    return projectIdParam[0] ?? null;
+  }
+
+  return projectIdParam ?? null;
+}
+
+function getMediaId(
+  req: Request,
+): string | null {
+  const mediaIdParam = req.params.id;
+
+  if (Array.isArray(mediaIdParam)) {
+    return mediaIdParam[0] ?? null;
+  }
+
+  return mediaIdParam ?? null;
 }
 
 export async function getProjectMedia(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
   try {
-    const projectId = String(req.params.projectId);
+    const projectId = getProjectId(req);
 
-    const media = await mediaService.getProjectMedia(projectId);
+    if (!projectId) {
+      res.status(400).json({
+        success: false,
+        error: "Project ID is required",
+      });
+
+      return;
+    }
+
+    const media = await prisma.mediaAsset.findMany({
+      where: {
+        projectId,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
 
     res.json({
       success: true,
-      data: media.map(serializeMedia)
+      data: media.map(serializeMedia),
     });
   } catch (error) {
-    console.error("Error getting project media:", error);
+    console.error(
+      "Error getting project media:",
+      error,
+    );
 
     res.status(500).json({
       success: false,
-      message: "Failed to retrieve project media"
+      error: "Failed to get project media",
     });
   }
 }
 
 export async function getMediaById(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
   try {
-    const id = String(req.params.id);
+    const id = getMediaId(req);
 
-    const media = await mediaService.getMediaById(id);
+    if (!id) {
+      res.status(400).json({
+        success: false,
+        error: "Media ID is required",
+      });
+
+      return;
+    }
+
+    const media =
+      await prisma.mediaAsset.findUnique({
+        where: {
+          id,
+        },
+      });
 
     if (!media) {
       res.status(404).json({
         success: false,
-        message: "Media asset not found"
+        error: "Media not found",
       });
+
       return;
     }
 
     res.json({
       success: true,
-      data: serializeMedia(media)
+      data: serializeMedia(media),
     });
   } catch (error) {
-    console.error("Error getting media asset:", error);
+    console.error("Error getting media:", error);
 
     res.status(500).json({
       success: false,
-      message: "Failed to retrieve media asset"
+      error: "Failed to get media",
     });
   }
 }
 
 export async function createMedia(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
+  const uploadedFile = req.file;
+
   try {
-    const projectId = String(req.params.projectId);
+    const projectId = getProjectId(req);
 
-    const {
-      originalName,
-      storagePath,
-      mimeType,
-      mediaType,
-      sizeBytes,
-      duration,
-      width,
-      height
-    } = req.body;
-
-    if (!originalName) {
+    if (!projectId) {
       res.status(400).json({
         success: false,
-        message: "Original name is required"
+        error: "Project ID is required",
       });
+
       return;
     }
 
-    if (!storagePath) {
+    if (!uploadedFile) {
       res.status(400).json({
         success: false,
-        message: "Storage path is required"
+        error: "File is required",
       });
+
       return;
     }
 
-    if (!mimeType) {
-      res.status(400).json({
-        success: false,
-        message: "MIME type is required"
-      });
-      return;
-    }
+    const detectedMediaType =
+      getMediaType(
+        uploadedFile.mimetype,
+      );
 
-    if (!mediaType) {
-      res.status(400).json({
-        success: false,
-        message: "Media type is required"
-      });
-      return;
-    }
+    const storageDirectory =
+      detectedMediaType === "IMAGE"
+        ? "images"
+        : detectedMediaType === "VIDEO"
+          ? "videos"
+          : "audio";
 
-    if (sizeBytes === undefined || sizeBytes === null) {
-      res.status(400).json({
-        success: false,
-        message: "Size is required"
-      });
-      return;
-    }
+    const storagePath =
+      `${storageDirectory}/${projectId}/${uploadedFile.filename}`;
 
-    if (!["IMAGE", "VIDEO", "AUDIO"].includes(mediaType)) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid media type"
+    const media =
+      await prisma.mediaAsset.create({
+        data: {
+          projectId,
+          originalName: uploadedFile.originalname,
+          storagePath,
+          mimeType: uploadedFile.mimetype,
+          mediaType: detectedMediaType,
+          sizeBytes: BigInt(uploadedFile.size),
+          duration: null,
+          width: null,
+          height: null,
+        },
       });
-      return;
-    }
-
-    const media = await mediaService.createMedia({
-      projectId,
-      originalName,
-      storagePath,
-      mimeType,
-      mediaType,
-      sizeBytes: BigInt(sizeBytes),
-      duration: duration ?? null,
-      width: width ?? null,
-      height: height ?? null
-    });
 
     res.status(201).json({
       success: true,
-      data: serializeMedia(media)
+      data: serializeMedia(media),
     });
   } catch (error) {
-    console.error("Error creating media asset:", error);
+    if (uploadedFile) {
+      try {
+        const projectId = getProjectId(req);
+
+        if (projectId) {
+          const detectedMediaType =
+            getMediaType(uploadedFile.mimetype,);
+
+          const storageDirectory =
+            detectedMediaType === "IMAGE"
+              ? "images"
+              : detectedMediaType === "VIDEO"
+                ? "videos"
+                : "audio";
+
+          const storagePath =
+            `${storageDirectory}/${projectId}/${uploadedFile.filename}`;
+
+          deletePhysicalFile(storagePath);
+        }
+      } catch (cleanupError) {
+        console.error("Error cleaning up uploaded file:", cleanupError);
+      }
+    }
+
+    console.error("Error creating media:", error,);
 
     res.status(500).json({
       success: false,
-      message: "Failed to create media asset"
+      error: "Failed to create media",
     });
   }
 }
 
 export async function deleteMedia(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
   try {
-    const id = String(req.params.id);
+    const id = getMediaId(req);
 
-    const existingMedia = await mediaService.getMediaById(id);
-
-    if (!existingMedia) {
-      res.status(404).json({
+    if (!id) {
+      res.status(400).json({
         success: false,
-        message: "Media asset not found"
+        error: "Media ID is required",
       });
+
       return;
     }
 
-    await mediaService.deleteMedia(id);
+    const media =
+      await prisma.mediaAsset.findUnique({
+        where: {
+          id,
+        },
+      });
+
+    if (!media) {
+      res.status(404).json({
+        success: false,
+        error: "Media not found",
+      });
+
+      return;
+    }
+
+    await prisma.mediaAsset.delete({
+      where: {
+        id,
+      },
+    });
+
+    try {
+      deletePhysicalFile(media.storagePath,);
+    } catch (fileError) {
+      console.error("Error deleting physical media file:", fileError,);
+    }
 
     res.json({
       success: true,
-      message: "Media asset deleted successfully"
+      message: "Media deleted successfully",
     });
   } catch (error) {
-    console.error("Error deleting media asset:", error);
+    console.error("Error deleting media:", error,);
 
     res.status(500).json({
       success: false,
-      message: "Failed to delete media asset"
+      error: "Failed to delete media",
     });
   }
 }
