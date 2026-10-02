@@ -12,5 +12,7 @@ storage/generated/
 storage/audio/
 storage/thumbnails/
 storage/temp/
+storage/images/
+storage/videos/
 
 backend/prisma/*.db
