@@ -7,39 +7,66 @@ import { prisma } from "../../config/prisma.js";
 
 import {
   deletePhysicalFile,
+  getAbsoluteStoragePath,
 } from "./media.storage.js";
+
+import {
+  generateThumbnail,
+} from "./media.thumbnail.js";
 
 function serializeMedia(media: {
   id: string;
   projectId: string;
   originalName: string;
+  filename: string;
   storagePath: string;
+  thumbnailPath: string | null;
   mimeType: string;
-  mediaType: "IMAGE" | "VIDEO" | "AUDIO";
+  mediaType:
+    | "IMAGE"
+    | "VIDEO"
+    | "AUDIO";
   sizeBytes: bigint;
   duration: number | null;
   width: number | null;
   height: number | null;
   createdAt: Date;
+  updatedAt: Date;
 }) {
   return {
     ...media,
-    sizeBytes: media.sizeBytes.toString(),
+    sizeBytes:
+      media.sizeBytes.toString(),
   };
 }
 
 function getMediaType(
   mimeType: string,
-): "IMAGE" | "VIDEO" | "AUDIO" {
-  if (mimeType.startsWith("image/")) {
+):
+  | "IMAGE"
+  | "VIDEO"
+  | "AUDIO" {
+  if (
+    mimeType.startsWith(
+      "image/",
+    )
+  ) {
     return "IMAGE";
   }
 
-  if (mimeType.startsWith("video/")) {
+  if (
+    mimeType.startsWith(
+      "video/",
+    )
+  ) {
     return "VIDEO";
   }
 
-  if (mimeType.startsWith("audio/")) {
+  if (
+    mimeType.startsWith(
+      "audio/",
+    )
+  ) {
     return "AUDIO";
   }
 
@@ -51,25 +78,47 @@ function getMediaType(
 function getProjectId(
   req: Request,
 ): string | null {
-  const projectIdParam = req.params.projectId;
+  const projectIdParam =
+    req.params.projectId;
 
-  if (Array.isArray(projectIdParam)) {
-    return projectIdParam[0] ?? null;
+  if (
+    Array.isArray(
+      projectIdParam,
+    )
+  ) {
+    return (
+      projectIdParam[0] ??
+      null
+    );
   }
 
-  return projectIdParam ?? null;
+  return (
+    projectIdParam ??
+    null
+  );
 }
 
 function getMediaId(
   req: Request,
 ): string | null {
-  const mediaIdParam = req.params.id;
+  const mediaIdParam =
+    req.params.id;
 
-  if (Array.isArray(mediaIdParam)) {
-    return mediaIdParam[0] ?? null;
+  if (
+    Array.isArray(
+      mediaIdParam,
+    )
+  ) {
+    return (
+      mediaIdParam[0] ??
+      null
+    );
   }
 
-  return mediaIdParam ?? null;
+  return (
+    mediaIdParam ??
+    null
+  );
 }
 
 export async function getProjectMedia(
@@ -77,29 +126,35 @@ export async function getProjectMedia(
   res: Response,
 ): Promise<void> {
   try {
-    const projectId = getProjectId(req);
+    const projectId =
+      getProjectId(req);
 
     if (!projectId) {
       res.status(400).json({
         success: false,
-        error: "Project ID is required",
+        error:
+          "Project ID is required",
       });
 
       return;
     }
 
-    const media = await prisma.mediaAsset.findMany({
-      where: {
-        projectId,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    const media =
+      await prisma.mediaAsset.findMany({
+        where: {
+          projectId,
+        },
+
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
 
     res.json({
       success: true,
-      data: media.map(serializeMedia),
+      data: media.map(
+        serializeMedia,
+      ),
     });
   } catch (error) {
     console.error(
@@ -109,7 +164,8 @@ export async function getProjectMedia(
 
     res.status(500).json({
       success: false,
-      error: "Failed to get project media",
+      error:
+        "Failed to get project media",
     });
   }
 }
@@ -119,12 +175,14 @@ export async function getMediaById(
   res: Response,
 ): Promise<void> {
   try {
-    const id = getMediaId(req);
+    const id =
+      getMediaId(req);
 
     if (!id) {
       res.status(400).json({
         success: false,
-        error: "Media ID is required",
+        error:
+          "Media ID is required",
       });
 
       return;
@@ -140,7 +198,8 @@ export async function getMediaById(
     if (!media) {
       res.status(404).json({
         success: false,
-        error: "Media not found",
+        error:
+          "Media not found",
       });
 
       return;
@@ -148,14 +207,19 @@ export async function getMediaById(
 
     res.json({
       success: true,
-      data: serializeMedia(media),
+      data:
+        serializeMedia(media),
     });
   } catch (error) {
-    console.error("Error getting media:", error);
+    console.error(
+      "Error getting media:",
+      error,
+    );
 
     res.status(500).json({
       success: false,
-      error: "Failed to get media",
+      error:
+        "Failed to get media",
     });
   }
 }
@@ -164,15 +228,26 @@ export async function createMedia(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const uploadedFile = req.file;
+  const uploadedFile =
+    req.file;
+
+  let storagePath:
+    | string
+    | null = null;
+
+  let thumbnailPath:
+    | string
+    | null = null;
 
   try {
-    const projectId = getProjectId(req);
+    const projectId =
+      getProjectId(req);
 
     if (!projectId) {
       res.status(400).json({
         success: false,
-        error: "Project ID is required",
+        error:
+          "Project ID is required",
       });
 
       return;
@@ -181,7 +256,8 @@ export async function createMedia(
     if (!uploadedFile) {
       res.status(400).json({
         success: false,
-        error: "File is required",
+        error:
+          "File is required",
       });
 
       return;
@@ -195,22 +271,53 @@ export async function createMedia(
     const storageDirectory =
       detectedMediaType === "IMAGE"
         ? "images"
-        : detectedMediaType === "VIDEO"
+        : detectedMediaType ===
+            "VIDEO"
           ? "videos"
           : "audio";
 
-    const storagePath =
+    storagePath =
       `${storageDirectory}/${projectId}/${uploadedFile.filename}`;
+
+    const absoluteSourcePath =
+      getAbsoluteStoragePath(
+        storagePath,
+      );
+
+    thumbnailPath =
+      await generateThumbnail(
+        absoluteSourcePath,
+        projectId,
+        uploadedFile.filename,
+        detectedMediaType,
+      );
 
     const media =
       await prisma.mediaAsset.create({
         data: {
           projectId,
-          originalName: uploadedFile.originalname,
+
+          originalName:
+            uploadedFile.originalname,
+
+          filename:
+            uploadedFile.filename,
+
           storagePath,
-          mimeType: uploadedFile.mimetype,
-          mediaType: detectedMediaType,
-          sizeBytes: BigInt(uploadedFile.size),
+
+          thumbnailPath,
+
+          mimeType:
+            uploadedFile.mimetype,
+
+          mediaType:
+            detectedMediaType,
+
+          sizeBytes:
+            BigInt(
+              uploadedFile.size,
+            ),
+
           duration: null,
           width: null,
           height: null,
@@ -219,39 +326,49 @@ export async function createMedia(
 
     res.status(201).json({
       success: true,
-      data: serializeMedia(media),
+      data:
+        serializeMedia(media),
     });
   } catch (error) {
-    if (uploadedFile) {
+    console.error(
+      "Error creating media:",
+      error,
+    );
+
+    if (thumbnailPath) {
       try {
-        const projectId = getProjectId(req);
-
-        if (projectId) {
-          const detectedMediaType =
-            getMediaType(uploadedFile.mimetype,);
-
-          const storageDirectory =
-            detectedMediaType === "IMAGE"
-              ? "images"
-              : detectedMediaType === "VIDEO"
-                ? "videos"
-                : "audio";
-
-          const storagePath =
-            `${storageDirectory}/${projectId}/${uploadedFile.filename}`;
-
-          deletePhysicalFile(storagePath);
-        }
-      } catch (cleanupError) {
-        console.error("Error cleaning up uploaded file:", cleanupError);
+        deletePhysicalFile(
+          thumbnailPath,
+        );
+      } catch (
+        cleanupError
+      ) {
+        console.error(
+          "Error deleting thumbnail:",
+          cleanupError,
+        );
       }
     }
 
-    console.error("Error creating media:", error,);
+    if (storagePath) {
+      try {
+        deletePhysicalFile(
+          storagePath,
+        );
+      } catch (
+        cleanupError
+      ) {
+        console.error(
+          "Error deleting uploaded file:",
+          cleanupError,
+        );
+      }
+    }
 
     res.status(500).json({
       success: false,
-      error: "Failed to create media",
+      error:
+        "Failed to create media",
     });
   }
 }
@@ -261,12 +378,14 @@ export async function deleteMedia(
   res: Response,
 ): Promise<void> {
   try {
-    const id = getMediaId(req);
+    const id =
+      getMediaId(req);
 
     if (!id) {
       res.status(400).json({
         success: false,
-        error: "Media ID is required",
+        error:
+          "Media ID is required",
       });
 
       return;
@@ -282,7 +401,8 @@ export async function deleteMedia(
     if (!media) {
       res.status(404).json({
         success: false,
-        error: "Media not found",
+        error:
+          "Media not found",
       });
 
       return;
@@ -295,21 +415,48 @@ export async function deleteMedia(
     });
 
     try {
-      deletePhysicalFile(media.storagePath,);
+      deletePhysicalFile(
+        media.storagePath,
+      );
     } catch (fileError) {
-      console.error("Error deleting physical media file:", fileError,);
+      console.error(
+        "Error deleting physical media file:",
+        fileError,
+      );
+    }
+
+    if (
+      media.thumbnailPath
+    ) {
+      try {
+        deletePhysicalFile(
+          media.thumbnailPath,
+        );
+      } catch (
+        thumbnailError
+      ) {
+        console.error(
+          "Error deleting thumbnail:",
+          thumbnailError,
+        );
+      }
     }
 
     res.json({
       success: true,
-      message: "Media deleted successfully",
+      message:
+        "Media deleted successfully",
     });
   } catch (error) {
-    console.error("Error deleting media:", error,);
+    console.error(
+      "Error deleting media:",
+      error,
+    );
 
     res.status(500).json({
       success: false,
-      error: "Failed to delete media",
+      error:
+        "Failed to delete media",
     });
   }
 }

@@ -33,17 +33,20 @@ model Project {
 }
 
 model MediaAsset {
-  id           String    @id @default(uuid())
-  projectId    String
-  originalName String
-  storagePath  String
-  mimeType     String
-  mediaType    MediaType
-  sizeBytes    BigInt
-  duration     Float?
-  width        Int?
-  height       Int?
-  createdAt    DateTime  @default(now())
+  id            String    @id @default(uuid())
+  projectId     String
+  filename      String
+  originalName  String
+  storagePath   String
+  thumbnailPath String?
+  mimeType      String
+  mediaType     MediaType
+  sizeBytes     BigInt
+  duration      Float?
+  width         Int?
+  height        Int?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
