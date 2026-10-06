@@ -32,7 +32,10 @@ import {
 
 import './MediaLibraryPage.css';
 
-type MediaType = 'IMAGE' | 'VIDEO' | 'AUDIO';
+type MediaType =
+  | 'IMAGE'
+  | 'VIDEO'
+  | 'AUDIO';
 
 interface Project {
   id: string;
@@ -57,10 +60,12 @@ interface MediaAsset {
 }
 
 const API_URL = (
-  import.meta.env.VITE_API_URL || 'http://127.0.0.1:5002'
+  import.meta.env.VITE_API_URL ||
+  'http://127.0.0.1:5002'
 ).replace(/\/$/, '');
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024;
+const MAX_FILE_SIZE =
+  100 * 1024 * 1024;
 
 const ACCEPTED_TYPES = [
   'image/jpeg',
@@ -128,7 +133,11 @@ function unwrapProjects(
     return result.data;
   }
 
-  if (Array.isArray(result?.data?.projects)) {
+  if (
+    Array.isArray(
+      result?.data?.projects,
+    )
+  ) {
     return result.data.projects;
   }
 
@@ -150,7 +159,11 @@ function unwrapMedia(
     return result.data;
   }
 
-  if (Array.isArray(result?.data?.media)) {
+  if (
+    Array.isArray(
+      result?.data?.media,
+    )
+  ) {
     return result.data.media;
   }
 
@@ -160,10 +173,13 @@ function unwrapMedia(
 function getMediaUrl(
   storagePath: string,
 ): string {
-  const normalizedPath = storagePath
-    .split('/')
-    .map((part) => encodeURIComponent(part))
-    .join('/');
+  const normalizedPath =
+    storagePath
+      .split('/')
+      .map((part) =>
+        encodeURIComponent(part),
+      )
+      .join('/');
 
   return `${API_URL}/uploads/${normalizedPath}`;
 }
@@ -183,7 +199,10 @@ function formatFileSize(
 ): string {
   const bytes = Number(size);
 
-  if (!Number.isFinite(bytes) || bytes <= 0) {
+  if (
+    !Number.isFinite(bytes) ||
+    bytes <= 0
+  ) {
     return '0 B';
   }
 
@@ -192,11 +211,19 @@ function formatFileSize(
   }
 
   if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(
+      bytes / 1024
+    ).toFixed(1)} KB`;
   }
 
-  if (bytes < 1024 * 1024 * 1024) {
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (
+    bytes <
+    1024 * 1024 * 1024
+  ) {
+    return `${(
+      bytes /
+      (1024 * 1024)
+    ).toFixed(1)} MB`;
   }
 
   return `${(
@@ -220,6 +247,57 @@ function formatDate(
       year: 'numeric',
     },
   ).format(new Date(date));
+}
+
+function formatDuration(
+  duration: number | null,
+): string {
+  if (
+    duration === null ||
+    !Number.isFinite(duration) ||
+    duration < 0
+  ) {
+    return '—';
+  }
+
+  const totalSeconds =
+    Math.round(duration);
+
+  const hours =
+    Math.floor(
+      totalSeconds / 3600,
+    );
+
+  const minutes =
+    Math.floor(
+      (totalSeconds % 3600) / 60,
+    );
+
+  const seconds =
+    totalSeconds % 60;
+
+  if (hours > 0) {
+    return [
+      hours
+        .toString()
+        .padStart(2, '0'),
+      minutes
+        .toString()
+        .padStart(2, '0'),
+      seconds
+        .toString()
+        .padStart(2, '0'),
+    ].join(':');
+  }
+
+  return [
+    minutes
+      .toString()
+      .padStart(2, '0'),
+    seconds
+      .toString()
+      .padStart(2, '0'),
+  ].join(':');
 }
 
 function getProjectName(
@@ -276,7 +354,9 @@ export default function MediaLibraryPage() {
     useState('all');
 
   const [selectedType, setSelectedType] =
-    useState<'ALL' | MediaType>('ALL');
+    useState<'ALL' | MediaType>(
+      'ALL',
+    );
 
   const [uploadModalOpen, setUploadModalOpen] =
     useState(false);
@@ -303,7 +383,9 @@ export default function MediaLibraryPage() {
     useState<string | null>(null);
 
   const fileInputRef =
-    useRef<HTMLInputElement | null>(null);
+    useRef<HTMLInputElement | null>(
+      null,
+    );
 
   const loadProjects =
     useCallback(async () => {
@@ -399,6 +481,32 @@ export default function MediaLibraryPage() {
   useEffect(() => {
     void loadMedia();
   }, [loadMedia]);
+
+  useEffect(() => {
+    if (!previewMedia) {
+      return;
+    }
+
+    function handleKeyDown(
+      event: KeyboardEvent,
+    ) {
+      if (event.key === 'Escape') {
+        setPreviewMedia(null);
+      }
+    }
+
+    window.addEventListener(
+      'keydown',
+      handleKeyDown,
+    );
+
+    return () => {
+      window.removeEventListener(
+        'keydown',
+        handleKeyDown,
+      );
+    };
+  }, [previewMedia]);
 
   const filteredMedia =
     useMemo(() => {
@@ -511,13 +619,11 @@ export default function MediaLibraryPage() {
       validFiles.push(file);
     }
 
-    if (errors.length > 0) {
-      setUploadError(
-        errors.join(' '),
-      );
-    } else {
-      setUploadError('');
-    }
+    setUploadError(
+      errors.length > 0
+        ? errors.join(' ')
+        : '',
+    );
 
     return validFiles;
   }
@@ -653,15 +759,12 @@ export default function MediaLibraryPage() {
           );
         }
 
-        const progress =
+        setUploadProgress(
           Math.round(
             ((index + 1) /
               selectedFiles.length) *
               100,
-          );
-
-        setUploadProgress(
-          progress,
+          ),
         );
       }
 
@@ -729,6 +832,95 @@ export default function MediaLibraryPage() {
     }
   }
 
+  function renderMetadata(
+    item: MediaAsset,
+  ) {
+    const dimensions =
+      item.width !== null &&
+      item.height !== null
+        ? `${item.width} × ${item.height} px`
+        : '—';
+
+    return (
+      <div className="media-preview-metadata">
+        <div className="media-preview-metadata-header">
+          <strong>
+            Media metadata
+          </strong>
+        </div>
+
+        <div className="media-preview-metadata-grid">
+          <div className="media-preview-metadata-item">
+            <span>Type</span>
+            <strong>
+              {item.mediaType}
+            </strong>
+          </div>
+
+          <div className="media-preview-metadata-item">
+            <span>Format</span>
+            <strong>
+              {item.mimeType}
+            </strong>
+          </div>
+
+          <div className="media-preview-metadata-item">
+            <span>Size</span>
+            <strong>
+              {formatFileSize(
+                item.sizeBytes,
+              )}
+            </strong>
+          </div>
+
+          <div className="media-preview-metadata-item">
+            <span>Dimensions</span>
+            <strong>
+              {dimensions}
+            </strong>
+          </div>
+
+          <div className="media-preview-metadata-item">
+            <span>Duration</span>
+            <strong>
+              {formatDuration(
+                item.duration,
+              )}
+            </strong>
+          </div>
+
+          <div className="media-preview-metadata-item">
+            <span>Created</span>
+            <strong>
+              {formatDate(
+                item.createdAt,
+              )}
+            </strong>
+          </div>
+
+          <div className="media-preview-metadata-item">
+            <span>Updated</span>
+            <strong>
+              {formatDate(
+                item.updatedAt,
+              )}
+            </strong>
+          </div>
+
+          <div className="media-preview-metadata-item">
+            <span>Project</span>
+            <strong>
+              {getProjectName(
+                projects,
+                item.projectId,
+              )}
+            </strong>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="media-library-page">
       <div className="media-library-header">
@@ -737,19 +929,23 @@ export default function MediaLibraryPage() {
             WORKSPACE
           </span>
 
-          <h1>Media Library</h1>
+          <h1>
+            Media Library
+          </h1>
 
           <p>
-            Manage the images, videos, and
-            audio used in your social
-            content.
+            Manage the images,
+            videos, and audio used
+            in your social content.
           </p>
         </div>
 
         <button
           type="button"
           className="media-primary-button"
-          onClick={openUploadModal}
+          onClick={
+            openUploadModal
+          }
           disabled={
             projectsLoading ||
             projects.length === 0
@@ -780,6 +976,7 @@ export default function MediaLibraryPage() {
             <strong>
               {media.length}
             </strong>
+
             <span>
               Total media
             </span>
@@ -805,6 +1002,7 @@ export default function MediaLibraryPage() {
             <strong>
               {imageCount}
             </strong>
+
             <span>
               Images
             </span>
@@ -830,6 +1028,7 @@ export default function MediaLibraryPage() {
             <strong>
               {videoCount}
             </strong>
+
             <span>
               Videos
             </span>
@@ -855,6 +1054,7 @@ export default function MediaLibraryPage() {
             <strong>
               {audioCount}
             </strong>
+
             <span>
               Audio
             </span>
@@ -955,11 +1155,14 @@ export default function MediaLibraryPage() {
 
       <div className="media-section-heading">
         <div>
-          <h2>All media</h2>
+          <h2>
+            All media
+          </h2>
 
           <span>
             {filteredMedia.length}{' '}
-            {filteredMedia.length === 1
+            {filteredMedia.length ===
+            1
               ? 'file'
               : 'files'}
           </span>
@@ -1049,22 +1252,18 @@ export default function MediaLibraryPage() {
                     aria-label={`Preview ${item.originalName}`}
                   >
                     {isImage(item) ? (
-                      thumbnailUrl ? (
-                        <img
-                          src={thumbnailUrl}
-                          alt={
-                            item.originalName
-                          }
-                        />
-                      ) : (
-                        <img
-                          src={mediaUrl}
-                          alt={
-                            item.originalName
-                          }
-                        />
-                      )
-                    ) : isVideo(item) ? (
+                      <img
+                        src={
+                          thumbnailUrl ||
+                          mediaUrl
+                        }
+                        alt={
+                          item.originalName
+                        }
+                      />
+                    ) : isVideo(
+                        item,
+                      ) ? (
                       <>
                         {thumbnailUrl ? (
                           <img
@@ -1093,7 +1292,9 @@ export default function MediaLibraryPage() {
                       </>
                     ) : (
                       <div className="media-audio-preview">
-                        <Music size={38} />
+                        <Music
+                          size={38}
+                        />
                       </div>
                     )}
 
@@ -1191,8 +1392,9 @@ export default function MediaLibraryPage() {
                 </h2>
 
                 <p>
-                  Add images, videos, or
-                  audio to a project.
+                  Add images, videos,
+                  or audio to a
+                  project.
                 </p>
               </div>
 
@@ -1278,8 +1480,9 @@ export default function MediaLibraryPage() {
               </p>
 
               <span>
-                Images, videos and audio
-                · Maximum 100 MB per file
+                Images, videos and
+                audio · Maximum 100 MB
+                per file
               </span>
 
               <input
@@ -1440,7 +1643,6 @@ export default function MediaLibraryPage() {
                       size={17}
                       className="media-spin"
                     />
-
                     Uploading...
                   </>
                 ) : (
@@ -1448,7 +1650,6 @@ export default function MediaLibraryPage() {
                     <Upload
                       size={17}
                     />
-
                     Upload
                   </>
                 )}
@@ -1473,7 +1674,11 @@ export default function MediaLibraryPage() {
           <div className="media-preview-modal">
             <div className="media-preview-modal-header">
               <div>
-                <h2>
+                <h2
+                  title={
+                    previewMedia.originalName
+                  }
+                >
                   {
                     previewMedia.originalName
                   }
@@ -1523,6 +1728,7 @@ export default function MediaLibraryPage() {
                   )}
                   controls
                   autoPlay
+                  playsInline
                 />
               )}
 
@@ -1534,7 +1740,11 @@ export default function MediaLibraryPage() {
                     <Music size={44} />
                   </div>
 
-                  <h3>
+                  <h3
+                    title={
+                      previewMedia.originalName
+                    }
+                  >
                     {
                       previewMedia.originalName
                     }
@@ -1551,25 +1761,9 @@ export default function MediaLibraryPage() {
               )}
             </div>
 
-            <div className="media-preview-details">
-              <span>
-                {
-                  previewMedia.mimeType
-                }
-              </span>
-
-              <span>
-                {formatFileSize(
-                  previewMedia.sizeBytes,
-                )}
-              </span>
-
-              <span>
-                {formatDate(
-                  previewMedia.createdAt,
-                )}
-              </span>
-            </div>
+            {renderMetadata(
+              previewMedia,
+            )}
           </div>
         </div>
       )}
