@@ -778,7 +778,7 @@
 .media-preview-modal {
   display: flex;
   flex-direction: column;
-  width: min(900px, 100%);
+  width: min(1000px, 100%);
   max-height: calc(100vh - 40px);
   overflow: hidden;
   border: 1px solid #e7e9f1;
@@ -797,6 +797,7 @@
 }
 
 .media-preview-modal-header h2 {
+  max-width: 700px;
   overflow: hidden;
   margin: 0 0 4px;
   color: #252938;
@@ -834,17 +835,24 @@
   align-items: center;
   justify-content: center;
   min-height: 350px;
-  max-height: calc(100vh - 190px);
+  max-height: calc(100vh - 320px);
   padding: 25px;
   overflow: auto;
   background: #f4f5f8;
 }
 
-.media-preview-content > img,
-.media-preview-content > video {
+.media-preview-content > img {
   display: block;
   max-width: 100%;
-  max-height: calc(100vh - 250px);
+  max-height: calc(100vh - 370px);
+  object-fit: contain;
+}
+
+.media-preview-content > video {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: calc(100vh - 370px);
   object-fit: contain;
 }
 
@@ -883,14 +891,52 @@
   width: 100%;
 }
 
-.media-preview-details {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 13px 22px;
+.media-preview-metadata {
+  flex-shrink: 0;
   border-top: 1px solid #eceef3;
-  color: #858b9e;
-  font-size: 10px;
+  background: #fff;
+}
+
+.media-preview-metadata-header {
+  padding: 13px 22px 9px;
+  color: #343849;
+  font-size: 12px;
+}
+
+.media-preview-metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  padding: 0 22px 16px;
+  background: #fff;
+}
+
+.media-preview-metadata-item {
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid #eef0f4;
+  border-radius: 8px;
+  background: #fafbfc;
+}
+
+.media-preview-metadata-item span {
+  display: block;
+  margin-bottom: 4px;
+  color: #969bad;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.media-preview-metadata-item strong {
+  display: block;
+  overflow: hidden;
+  color: #4b5163;
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .media-spin {
@@ -898,26 +944,32 @@
 }
 
 @keyframes media-rotation {
+  from {
+    transform: rotate(0deg);
+  }
+
   to {
     transform: rotate(360deg);
   }
 }
 
-@media (max-width: 1250px) {
+@media (max-width: 1200px) {
   .media-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(
+      3,
+      minmax(0, 1fr)
+    );
   }
 
   .media-statistics {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(
+      2,
+      1fr
+    );
   }
 }
 
-@media (max-width: 850px) {
-  .media-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
+@media (max-width: 900px) {
   .media-toolbar {
     flex-wrap: wrap;
   }
@@ -925,43 +977,74 @@
   .media-search {
     width: 100%;
   }
+
+  .media-preview-metadata-grid {
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 700px) {
   .media-library-header {
     align-items: flex-start;
     flex-direction: column;
   }
 
+  .media-grid {
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  }
+
+  .media-preview-modal {
+    max-height: calc(100vh - 20px);
+  }
+
+  .media-preview-content {
+    min-height: 260px;
+    max-height: calc(100vh - 390px);
+    padding: 15px;
+  }
+
+  .media-preview-content > img,
+  .media-preview-content > video {
+    max-height: calc(100vh - 430px);
+  }
+}
+
+@media (max-width: 520px) {
   .media-statistics {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   .media-grid {
     grid-template-columns: 1fr;
   }
 
-  .media-preview {
-    height: 220px;
-  }
-
   .media-project-filter {
     flex: 1;
+    min-width: 0;
   }
 
-  .media-modal {
-    padding: 20px;
+  .media-preview-metadata-grid {
+    grid-template-columns: 1fr 1fr;
+    padding-left: 14px;
+    padding-right: 14px;
   }
 
-  .media-modal-actions {
-    flex-direction: column-reverse;
+  .media-preview-modal-header {
+    padding: 14px;
   }
 
-  .media-modal-actions button {
-    width: 100%;
+  .media-preview-modal-header h2 {
+    max-width: 260px;
   }
 
-  .media-preview-details {
-    flex-wrap: wrap;
+  .media-preview-metadata-header {
+    padding-left: 14px;
+    padding-right: 14px;
   }
 }
