@@ -14,6 +14,10 @@ import {
   generateThumbnail,
 } from "./media.thumbnail.js";
 
+import {
+  extractMediaMetadata,
+} from "./media.metadata.js";
+
 function serializeMedia(media: {
   id: string;
   projectId: string;
@@ -284,6 +288,22 @@ export async function createMedia(
         storagePath,
       );
 
+    /*
+     * Extract media metadata before
+     * creating the database record.
+     */
+    const metadata =
+      await extractMediaMetadata(
+        absoluteSourcePath,
+        detectedMediaType,
+      );
+
+    /*
+     * Generate the thumbnail after
+     * the uploaded file has been
+     * validated and its metadata
+     * extracted.
+     */
     thumbnailPath =
       await generateThumbnail(
         absoluteSourcePath,
@@ -318,9 +338,14 @@ export async function createMedia(
               uploadedFile.size,
             ),
 
-          duration: null,
-          width: null,
-          height: null,
+          duration:
+            metadata.duration,
+
+          width:
+            metadata.width,
+
+          height:
+            metadata.height,
         },
       });
 

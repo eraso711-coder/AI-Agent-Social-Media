@@ -51,31 +51,42 @@ export async function createMedia(data: {
 }) {
   return prisma.mediaAsset.create({
     data: {
-      projectId: data.projectId,
+      projectId:
+        data.projectId,
 
-      originalName: data.originalName,
+      originalName:
+        data.originalName,
 
-      filename: data.filename,
+      filename:
+        data.filename,
 
-      storagePath: data.storagePath,
+      storagePath:
+        data.storagePath,
 
       thumbnailPath:
-        data.thumbnailPath ?? null,
+        data.thumbnailPath ??
+        null,
 
-      mimeType: data.mimeType,
+      mimeType:
+        data.mimeType,
 
-      mediaType: data.mediaType,
+      mediaType:
+        data.mediaType,
 
-      sizeBytes: data.sizeBytes,
+      sizeBytes:
+        data.sizeBytes,
 
       duration:
-        data.duration ?? null,
+        data.duration ??
+        null,
 
       width:
-        data.width ?? null,
+        data.width ??
+        null,
 
       height:
-        data.height ?? null,
+        data.height ??
+        null,
     },
   });
 }

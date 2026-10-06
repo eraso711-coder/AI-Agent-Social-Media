@@ -1,14 +1,14 @@
-import fs from 'fs';
-import path from 'path';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
+import fs from "fs";
+import path from "path";
+import { execFile } from "child_process";
+import { promisify } from "util";
 
-import sharp from 'sharp';
-import ffmpegPath from 'ffmpeg-static';
+import sharp from "sharp";
+import ffmpegPath from "ffmpeg-static";
 
 import {
   getThumbnailDirectory,
-} from './media.storage.js';
+} from "./media.storage.js";
 
 const execFileAsync =
   promisify(execFile);
@@ -57,8 +57,8 @@ export async function generateImageThumbnail(
       THUMBNAIL_WIDTH,
       THUMBNAIL_HEIGHT,
       {
-        fit: 'cover',
-        position: 'centre',
+        fit: "cover",
+        position: "centre",
       },
     )
     .jpeg({
@@ -78,7 +78,7 @@ export async function generateVideoThumbnail(
 ): Promise<string> {
   if (!ffmpegPath) {
     throw new Error(
-      'FFmpeg binary is not available',
+      "FFmpeg binary is not available",
     );
   }
 
@@ -104,22 +104,22 @@ export async function generateVideoThumbnail(
   await execFileAsync(
     ffmpegBinary,
     [
-      '-y',
+      "-y",
 
-      '-ss',
-      '00:00:01',
+      "-ss",
+      "00:00:01",
 
-      '-i',
+      "-i",
       sourcePath,
 
-      '-frames:v',
-      '1',
+      "-frames:v",
+      "1",
 
-      '-vf',
+      "-vf",
       `scale=${THUMBNAIL_WIDTH}:${THUMBNAIL_HEIGHT}:force_original_aspect_ratio=increase,crop=${THUMBNAIL_WIDTH}:${THUMBNAIL_HEIGHT}`,
 
-      '-q:v',
-      '3',
+      "-q:v",
+      "3",
 
       thumbnailAbsolutePath,
     ],
@@ -131,7 +131,7 @@ export async function generateVideoThumbnail(
     )
   ) {
     throw new Error(
-      'Video thumbnail was not generated',
+      "Video thumbnail was not generated",
     );
   }
 
@@ -143,12 +143,12 @@ export async function generateThumbnail(
   projectId: string,
   filename: string,
   mediaType:
-    | 'IMAGE'
-    | 'VIDEO'
-    | 'AUDIO',
+    | "IMAGE"
+    | "VIDEO"
+    | "AUDIO",
 ): Promise<string | null> {
   if (
-    mediaType === 'IMAGE'
+    mediaType === "IMAGE"
   ) {
     return generateImageThumbnail(
       sourcePath,
@@ -158,7 +158,7 @@ export async function generateThumbnail(
   }
 
   if (
-    mediaType === 'VIDEO'
+    mediaType === "VIDEO"
   ) {
     return generateVideoThumbnail(
       sourcePath,
