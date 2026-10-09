@@ -102,16 +102,16 @@ async function apiRequest<T>(
   if (!response.ok) {
     throw new Error(
       result?.error ||
-        result?.message ||
-        `Request failed with status ${response.status}`,
+      result?.message ||
+      `Request failed with status ${response.status}`,
     );
   }
 
   if (result?.success === false) {
     throw new Error(
       result.error ||
-        result.message ||
-        'Request failed',
+      result.message ||
+      'Request failed',
     );
   }
 
@@ -358,6 +358,10 @@ export default function MediaLibraryPage() {
       'ALL',
     );
 
+  const [sortOrder, setSortOrder] = useState<
+    'newest' | 'oldest'
+  >('newest');
+
   const [uploadModalOpen, setUploadModalOpen] =
     useState(false);
 
@@ -508,42 +512,41 @@ export default function MediaLibraryPage() {
     };
   }, [previewMedia]);
 
-  const filteredMedia =
-    useMemo(() => {
-      const query =
-        search.trim().toLowerCase();
+  const filteredMedia = useMemo(() => {
+    const query = search.trim().toLowerCase();
 
-      return media.filter(
-        (item) => {
-          const matchesSearch =
-            !query ||
-            item.originalName
-              .toLowerCase()
-              .includes(query) ||
-            getProjectName(
-              projects,
-              item.projectId,
-            )
-              .toLowerCase()
-              .includes(query);
+    return media
+      .filter((item) => {
+        const matchesSearch =
+          !query ||
+          item.originalName
+            .toLowerCase()
+            .includes(query) ||
+          getProjectName(projects, item.projectId)
+            .toLowerCase()
+            .includes(query);
 
-          const matchesType =
-            selectedType === 'ALL' ||
-            item.mediaType ===
-              selectedType;
+        const matchesType =
+          selectedType === 'ALL' ||
+          item.mediaType === selectedType;
 
-          return (
-            matchesSearch &&
-            matchesType
-          );
-        },
-      );
-    }, [
-      media,
-      projects,
-      search,
-      selectedType,
-    ]);
+        return matchesSearch && matchesType;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+
+        return sortOrder === 'newest'
+          ? dateB - dateA
+          : dateA - dateB;
+      });
+  }, [
+    media,
+    projects,
+    search,
+    selectedType,
+    sortOrder,
+  ]);
 
   const imageCount =
     media.filter(
@@ -754,8 +757,8 @@ export default function MediaLibraryPage() {
         if (!response.ok) {
           throw new Error(
             result?.error ||
-              result?.message ||
-              `Unable to upload ${file.name}.`,
+            result?.message ||
+            `Unable to upload ${file.name}.`,
           );
         }
 
@@ -763,7 +766,7 @@ export default function MediaLibraryPage() {
           Math.round(
             ((index + 1) /
               selectedFiles.length) *
-              100,
+            100,
           ),
         );
       }
@@ -837,7 +840,7 @@ export default function MediaLibraryPage() {
   ) {
     const dimensions =
       item.width !== null &&
-      item.height !== null
+        item.height !== null
         ? `${item.width} × ${item.height} px`
         : '—';
 
@@ -959,11 +962,10 @@ export default function MediaLibraryPage() {
       <div className="media-statistics">
         <button
           type="button"
-          className={`media-stat-card ${
-            selectedType === 'ALL'
-              ? 'active'
-              : ''
-          }`}
+          className={`media-stat-card ${selectedType === 'ALL'
+            ? 'active'
+            : ''
+            }`}
           onClick={() =>
             setSelectedType('ALL')
           }
@@ -985,11 +987,10 @@ export default function MediaLibraryPage() {
 
         <button
           type="button"
-          className={`media-stat-card ${
-            selectedType === 'IMAGE'
-              ? 'active'
-              : ''
-          }`}
+          className={`media-stat-card ${selectedType === 'IMAGE'
+            ? 'active'
+            : ''
+            }`}
           onClick={() =>
             setSelectedType('IMAGE')
           }
@@ -1011,11 +1012,10 @@ export default function MediaLibraryPage() {
 
         <button
           type="button"
-          className={`media-stat-card ${
-            selectedType === 'VIDEO'
-              ? 'active'
-              : ''
-          }`}
+          className={`media-stat-card ${selectedType === 'VIDEO'
+            ? 'active'
+            : ''
+            }`}
           onClick={() =>
             setSelectedType('VIDEO')
           }
@@ -1037,11 +1037,10 @@ export default function MediaLibraryPage() {
 
         <button
           type="button"
-          className={`media-stat-card ${
-            selectedType === 'AUDIO'
-              ? 'active'
-              : ''
-          }`}
+          className={`media-stat-card ${selectedType === 'AUDIO'
+            ? 'active'
+            : ''
+            }`}
           onClick={() =>
             setSelectedType('AUDIO')
           }
@@ -1068,21 +1067,17 @@ export default function MediaLibraryPage() {
 
           <input
             type="text"
-            placeholder="Search media..."
+            placeholder="Search by filename..."
             value={search}
             onChange={(event) =>
-              setSearch(
-                event.target.value,
-              )
+              setSearch(event.target.value)
             }
           />
 
           {search && (
             <button
               type="button"
-              onClick={() =>
-                setSearch('')
-              }
+              onClick={() => setSearch('')}
               aria-label="Clear search"
             >
               <X size={16} />
@@ -1094,44 +1089,60 @@ export default function MediaLibraryPage() {
           className="media-project-filter"
           value={selectedProjectId}
           onChange={(event) =>
-            setSelectedProjectId(
-              event.target.value,
+            setSelectedProjectId(event.target.value)
+          }
+          aria-label="Filter by project"
+        >
+          <option value="all">All projects</option>
+
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="media-project-filter"
+          value={selectedType}
+          onChange={(event) =>
+            setSelectedType(
+              event.target.value as 'ALL' | MediaType,
             )
           }
+          aria-label="Filter by media type"
         >
-          <option value="all">
-            All projects
-          </option>
+          <option value="ALL">All media types</option>
+          <option value="IMAGE">Images</option>
+          <option value="VIDEO">Videos</option>
+          <option value="AUDIO">Audio</option>
+        </select>
 
-          {projects.map(
-            (project) => (
-              <option
-                key={project.id}
-                value={project.id}
-              >
-                {project.name}
-              </option>
-            ),
-          )}
+        <select
+          className="media-project-filter"
+          value={sortOrder}
+          onChange={(event) =>
+            setSortOrder(
+              event.target.value as 'newest' | 'oldest',
+            )
+          }
+          aria-label="Sort by upload date"
+        >
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
         </select>
 
         <button
           type="button"
           className="media-refresh-button"
-          onClick={() =>
-            void loadMedia()
-          }
+          onClick={() => void loadMedia()}
           disabled={loading}
           title="Refresh"
           aria-label="Refresh media"
         >
           <RefreshCw
             size={17}
-            className={
-              loading
-                ? 'media-spin'
-                : ''
-            }
+            className={loading ? 'media-spin' : ''}
           />
         </button>
       </div>
@@ -1162,7 +1173,7 @@ export default function MediaLibraryPage() {
           <span>
             {filteredMedia.length}{' '}
             {filteredMedia.length ===
-            1
+              1
               ? 'file'
               : 'files'}
           </span>
@@ -1189,8 +1200,8 @@ export default function MediaLibraryPage() {
 
           <h3>
             {search ||
-            selectedType !== 'ALL' ||
-            selectedProjectId !==
+              selectedType !== 'ALL' ||
+              selectedProjectId !==
               'all'
               ? 'No media found'
               : 'Your media library is empty'}
@@ -1198,8 +1209,8 @@ export default function MediaLibraryPage() {
 
           <p>
             {search ||
-            selectedType !== 'ALL' ||
-            selectedProjectId !==
+              selectedType !== 'ALL' ||
+              selectedProjectId !==
               'all'
               ? 'Try changing your filters or search term.'
               : 'Upload images, videos, or audio files to get started.'}
@@ -1208,7 +1219,7 @@ export default function MediaLibraryPage() {
           {!search &&
             selectedType === 'ALL' &&
             selectedProjectId ===
-              'all' &&
+            'all' &&
             projects.length > 0 && (
               <button
                 type="button"
@@ -1262,8 +1273,8 @@ export default function MediaLibraryPage() {
                         }
                       />
                     ) : isVideo(
-                        item,
-                      ) ? (
+                      item,
+                    ) ? (
                       <>
                         {thumbnailUrl ? (
                           <img
@@ -1354,7 +1365,7 @@ export default function MediaLibraryPage() {
                     aria-label={`Delete ${item.originalName}`}
                   >
                     {deletingId ===
-                    item.id ? (
+                      item.id ? (
                       <Loader2
                         size={16}
                         className="media-spin"
@@ -1501,81 +1512,81 @@ export default function MediaLibraryPage() {
 
             {selectedFiles.length >
               0 && (
-              <div className="selected-files">
-                <div className="selected-files-heading">
-                  <strong>
-                    Selected files (
-                    {
-                      selectedFiles.length
-                    }
-                    )
-                  </strong>
-                </div>
+                <div className="selected-files">
+                  <div className="selected-files-heading">
+                    <strong>
+                      Selected files (
+                      {
+                        selectedFiles.length
+                      }
+                      )
+                    </strong>
+                  </div>
 
-                {selectedFiles.map(
-                  (
-                    file,
-                    index,
-                  ) => (
-                    <div
-                      className="selected-file"
-                      key={`${file.name}-${file.size}-${file.lastModified}`}
-                    >
-                      <div className="selected-file-icon">
-                        {file.type.startsWith(
-                          'image/',
-                        ) ? (
-                          <FileImage
-                            size={18}
-                          />
-                        ) : file.type.startsWith(
+                  {selectedFiles.map(
+                    (
+                      file,
+                      index,
+                    ) => (
+                      <div
+                        className="selected-file"
+                        key={`${file.name}-${file.size}-${file.lastModified}`}
+                      >
+                        <div className="selected-file-icon">
+                          {file.type.startsWith(
+                            'image/',
+                          ) ? (
+                            <FileImage
+                              size={18}
+                            />
+                          ) : file.type.startsWith(
                             'video/',
                           ) ? (
-                          <FileVideo
-                            size={18}
-                          />
-                        ) : (
-                          <FileAudio
-                            size={18}
-                          />
-                        )}
-                      </div>
-
-                      <div className="selected-file-info">
-                        <strong
-                          title={
-                            file.name
-                          }
-                        >
-                          {file.name}
-                        </strong>
-
-                        <span>
-                          {formatFileSize(
-                            file.size,
+                            <FileVideo
+                              size={18}
+                            />
+                          ) : (
+                            <FileAudio
+                              size={18}
+                            />
                           )}
-                        </span>
-                      </div>
+                        </div>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          removeSelectedFile(
-                            index,
-                          )
-                        }
-                        disabled={
-                          uploading
-                        }
-                        aria-label={`Remove ${file.name}`}
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ),
-                )}
-              </div>
-            )}
+                        <div className="selected-file-info">
+                          <strong
+                            title={
+                              file.name
+                            }
+                          >
+                            {file.name}
+                          </strong>
+
+                          <span>
+                            {formatFileSize(
+                              file.size,
+                            )}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removeSelectedFile(
+                              index,
+                            )
+                          }
+                          disabled={
+                            uploading
+                          }
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ),
+                  )}
+                </div>
+              )}
 
             {uploadError && (
               <div className="media-upload-error">
@@ -1633,7 +1644,7 @@ export default function MediaLibraryPage() {
                 disabled={
                   uploading ||
                   selectedFiles.length ===
-                    0 ||
+                  0 ||
                   !uploadProjectId
                 }
               >
@@ -1709,56 +1720,56 @@ export default function MediaLibraryPage() {
               {isImage(
                 previewMedia,
               ) && (
-                <img
-                  src={getMediaUrl(
-                    previewMedia.storagePath,
-                  )}
-                  alt={
-                    previewMedia.originalName
-                  }
-                />
-              )}
+                  <img
+                    src={getMediaUrl(
+                      previewMedia.storagePath,
+                    )}
+                    alt={
+                      previewMedia.originalName
+                    }
+                  />
+                )}
 
               {isVideo(
                 previewMedia,
               ) && (
-                <video
-                  src={getMediaUrl(
-                    previewMedia.storagePath,
-                  )}
-                  controls
-                  autoPlay
-                  playsInline
-                />
-              )}
-
-              {isAudio(
-                previewMedia,
-              ) && (
-                <div className="media-audio-player">
-                  <div className="media-audio-large-icon">
-                    <Music size={44} />
-                  </div>
-
-                  <h3
-                    title={
-                      previewMedia.originalName
-                    }
-                  >
-                    {
-                      previewMedia.originalName
-                    }
-                  </h3>
-
-                  <audio
+                  <video
                     src={getMediaUrl(
                       previewMedia.storagePath,
                     )}
                     controls
                     autoPlay
+                    playsInline
                   />
-                </div>
-              )}
+                )}
+
+              {isAudio(
+                previewMedia,
+              ) && (
+                  <div className="media-audio-player">
+                    <div className="media-audio-large-icon">
+                      <Music size={44} />
+                    </div>
+
+                    <h3
+                      title={
+                        previewMedia.originalName
+                      }
+                    >
+                      {
+                        previewMedia.originalName
+                      }
+                    </h3>
+
+                    <audio
+                      src={getMediaUrl(
+                        previewMedia.storagePath,
+                      )}
+                      controls
+                      autoPlay
+                    />
+                  </div>
+                )}
             </div>
 
             {renderMetadata(
