@@ -8,6 +8,7 @@ import { prisma } from "./config/prisma.js";
 import healthRoutes from "./routes/health.routes.js";
 import projectsRoutes from "./modules/projects/projects.routes.js";
 import mediaRoutes from "./modules/media/media.routes.js";
+import aiAnalysisRoutes from "./modules/ai-analysis/ai-analysis.routes.js";
 
 import {
   STORAGE_DIRECTORY,
@@ -76,6 +77,11 @@ app.use(
 app.use(
   "/api/projects",
   projectsRoutes,
+);
+
+app.use(
+  "/api",
+  aiAnalysisRoutes,
 );
 
 app.use(
