@@ -5,6 +5,7 @@ import {
   FolderKanban,
   Images,
   BrainCircuit,
+  Sparkles,
   Film,
   ClipboardCheck,
   Send,
@@ -14,6 +15,7 @@ import {
 
 import ProjectsPage from './pages/ProjectsPage';
 import MediaLibraryPage from './pages/MediaLibraryPage';
+import AIAnalysisPage from './pages/AIAnalysisPage';
 
 import "./App.css";
 
@@ -21,6 +23,7 @@ type Page =
   | 'dashboard'
   | 'projects'
   | 'media'
+  | 'ai-analysis'
   | 'ai-content'
   | 'video-editor'
   | 'approvals'
@@ -47,6 +50,11 @@ const navigationItems: NavigationItem[] = [
     id: 'media',
     label: 'Media Library',
     icon: Images,
+  },
+  {
+    id: 'ai-analysis',
+    label: 'AI Media Analysis',
+    icon: Sparkles,
   },
   {
     id: 'ai-content',
@@ -87,6 +95,12 @@ function DashboardPage({
       title: 'Media Library',
       description: 'Manage images, videos, and audio assets.',
       icon: Images,
+    },
+    {
+      id: 'ai-analysis' as Page,
+      title: 'AI Media Analysis',
+      description: 'Understand images and videos with AI-generated summaries and keywords.',
+      icon: Sparkles,
     },
     {
       id: 'ai-content' as Page,
@@ -160,7 +174,7 @@ function DashboardPage({
               </div>
               <h3>{module.title}</h3>
               <p>{module.description}</p>
-              <span>Planned</span>
+              <span>{module.id === 'ai-analysis' ? 'Available' : 'Planned'}</span>
             </button>
           );
         })}
@@ -255,8 +269,12 @@ function App() {
 
         {currentPage === 'projects' && <ProjectsPage />}
         {currentPage === 'media' && <MediaLibraryPage />}
+        {currentPage === 'ai-analysis' && <AIAnalysisPage />}
 
-        {currentPage !== 'dashboard' && currentPage !== 'projects' && currentPage !== 'media' && (
+        {currentPage !== 'dashboard' &&
+          currentPage !== 'projects' &&
+          currentPage !== 'media' &&
+          currentPage !== 'ai-analysis' && (
             <div className="coming-soon-page">
               <span className="dashboard-eyebrow">WORKSPACE</span>
               <h1>{currentNavigationItem?.label}</h1>
