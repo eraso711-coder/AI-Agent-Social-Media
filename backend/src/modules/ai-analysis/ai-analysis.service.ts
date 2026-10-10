@@ -197,13 +197,12 @@ async function analyzeVideo(
       text:
         "Analyze these frames sampled in chronological order from one video. Infer the overall visual subject and actions only when supported by the frames. Return a concise video summary, visual description, and useful social-media keywords.",
     },
-    ...frames.map((frame, index) => ({
+    ...frames.map((frame) => ({
       type: "image_url",
       image_url: {
         url: `data:image/jpeg;base64,${frame}`,
         detail: "high",
       },
-      frameIndex: index + 1,
     })),
   ];
 
